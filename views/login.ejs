@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <form action="/login" method="post" id="login">
+        <div id="heading">
+          <h1>Login</h1>
+        </div>
+
+        <div class="inputs">
+          <div style="color: red;" class="flash">
+            <%= msg %>
+          </div>
+          <div>
+              <label for="email">Email</label>
+            <input type="email" placeholder="Enter your email" name="email" />
+          </div>
+
+          <div>
+              <label for="Password">Password</label>
+            <input type="password" placeholder="Enter your password" name="password" />
+          </div>
+
+          <div>
+            <button type="submit">Login</button>
+          </div>
+
+          <div class="link">
+            Already Signed Up?<a href="/register">Sign Up</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
