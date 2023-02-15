@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login</title>
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -15,8 +16,10 @@
         </div>
 
         <div class="inputs">
-          <div style="color: red;" class="flash">
-            <%= msg %>
+          <div id="flash" style="color: red;" class="flash">
+            <% if(typeof msg != 'undefined' && msg) { %>
+              <%= msg %>
+           <% } %>
           </div>
           <div>
               <label for="email">Email</label>
@@ -38,5 +41,10 @@
         </div>
       </form>
     </div>
+    <script>
+      setTimeout(() => {
+        $("#flash").hide()
+      },10000)
+    </script>
   </body>
 </html>

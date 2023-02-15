@@ -9,5 +9,30 @@
 </head>
 <body>
     <h2>Home Page</h2>
+    <% if(typeof msg != 'undefined' && msg) { %>
+        <%= msg %>
+    <%}%>
+
+    <a id="link" href="/logout">Logout</a>
+
+    <style>
+        #link {
+            margin-left: 120px;
+            text-align: center;
+            padding-top: 5px;
+            border: 0px;
+            border-radius: 5px;
+            height: 30px;
+            width: 100px;
+            margin-top: 20px;
+            box-shadow: 10px 10px 18px -8px #aaaaaa, -10px -10px 24px #ffffff;
+            background: linear-gradient(#fff, #ccc);
+            cursor: pointer;
+        }
+
+        #link:hover {
+            background: linear-gradient(#ccc, #fff);
+        }
+    </style>
 </body>
 </html>

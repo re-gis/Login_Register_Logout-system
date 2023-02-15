@@ -11,6 +11,16 @@ const nodeMailer = require("nodemailer");
 const { sendEmail } = require("./email");
 const { exit } = require("process");
 const dotenv = require("dotenv").config();
+const jwt=require('jsonwebtoken');
+const session = require('express-session')
+const cookieParser = require('cookie-parser')
+
+app.use(cookieParser())
+app.use(session({
+  resave: true,
+  saveUninitialized: true,
+  secret: process.env.SECRET
+}))
 
 // View engine setup
 app.set("view engine", "ejs");
@@ -35,7 +45,12 @@ app.get("/register", (req, res) => {
 
 // Login page
 app.get("/login", (req, res) => {
-  res.render("login");
+  if(req.session.length == 1) {
+    res.send('Signup first!')
+  } else {
+    console.log(req.session);
+    res.render("login");
+  }
 });
 
 // Registering the user
@@ -47,7 +62,6 @@ app.post("/register", async (req, res) => {
   // Check if all credentials are given
   if (!name || !email || !password) {
     res.render("register", { msg: 'Please all credentials required!'});
-    console.log("Please all credentials required!");
   } else {
     // Check if email already exists
     let sql = `SELECT * FROM users WHERE email = '${email}'`;
@@ -80,7 +94,7 @@ app.post("/register", async (req, res) => {
                       let token = data[0].token;
                       const message = `${process.env.BASE_URL}/verify/${id}/${token}`;
                       await sendEmail(req.body.email, "Verify email", message);
-                      res.send("Email sent to your account, please verify!");
+                      res.render('login', { msg: 'Please verify email to continue!'})
                     }
                   });
                 }
@@ -89,7 +103,6 @@ app.post("/register", async (req, res) => {
           });
         } else {
           res.render("register", { msg: `${email} already exists!`});
-          console.log(`${email} already exists!`);
         }
       }
     });
@@ -147,7 +160,6 @@ app.post("/login", (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
   if (!email || !password) {
-    console.log("Input all credentials!");
     res.render("login", { msg: 'Input all credentials!'});
   } else {
     // Check if the user exists in the database using email
@@ -161,24 +173,69 @@ app.post("/login", (req, res) => {
           // Check if the password matches
           let passExists = await bcrypt.compare(password, loginPass);
           if (!passExists) {
-            console.log("Email or Password not matching!");
-            res.render("login");
+            res.render("login", { msg: 'Email or Password not matching!'});
           } else {
             if (data[0].verified == 'true') {
-              console.log("Login success!");
-              res.render("index");
+
+              //jsonwebtoken,
+              const token=jwt.sign(data[0].id,process.env.SECRET_KEY);
+              //setting token into browser
+              // return res.status(200).json({
+              //   token
+              // })
+              // const user = {
+              //   id: data[0].id,
+              //   name: data[0].name,
+              //   email: data[0].email
+              // }
+              res.cookie('jwt',token);
+              // console.log(req.cookies.jwt);
+              // req.session.user = user
+              // req.session.save()
+              res.render("index", { msg: `Logged in as ${data[0].name}` });
             } else {
-                res.send("Please verify your email please!")
+                res.render('login', { msg: 'Please verify your email!' })
             }
           }
         } else {
-          console.log("Email or Password not matching!");
-          res.render("login", { msg: 'Email or Password not matching!'});
+          res.render("login", { msg: 'Email or Password not matching!' });
         }
       }
     });
   }
 });
+
+
+app.get('/logout', (req, res) => {
+  // req.session.user = user
+  // req.session.destroy()
+  // req.cookies.jwt=null;
+  res.render('login')
+})
+
+// const user = {
+//   name: 'Regis',
+//   email: 'irumvaregisdmc@gmail.com'
+// }
+
+// // Session
+// app.get('/log', (req, res) => {
+//   req.session.user = user
+//   req.session.save()
+//   return res.send('logged in!')
+// })
+
+
+// app.get('/user', (req, res) => {
+//   return res.send(req.session.user)
+// })
+
+
+// app.get('/logout', (req, res) => {
+//   req.session.destroy()
+//   res.send('Logged out!')
+// })
+
 
 app.listen(3000, () => {
   console.log(`Server listening port 3000...`);
