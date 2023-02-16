@@ -11,16 +11,18 @@ const nodeMailer = require("nodemailer");
 const { sendEmail } = require("./email");
 const { exit } = require("process");
 const dotenv = require("dotenv").config();
-const jwt=require('jsonwebtoken');
-const session = require('express-session')
-const cookieParser = require('cookie-parser')
+const jwt = require("jsonwebtoken");
+const session = require("express-session");
+const cookieParser = require("cookie-parser");
 
-app.use(cookieParser())
-app.use(session({
-  resave: true,
-  saveUninitialized: true,
-  secret: process.env.SECRET
-}))
+app.use(cookieParser());
+app.use(
+  session({
+    resave: true,
+    saveUninitialized: true,
+    secret: process.env.SECRET,
+  })
+);
 
 // View engine setup
 app.set("view engine", "ejs");
@@ -33,11 +35,6 @@ app.use(express.static(path.join(__dirname, "/views/styles")));
 
 // Routes
 
-// Home page
-app.get("/", (req, res) => {
-  res.render("index");
-});
-
 // Register page
 app.get("/register", (req, res) => {
   res.render("register");
@@ -45,12 +42,7 @@ app.get("/register", (req, res) => {
 
 // Login page
 app.get("/login", (req, res) => {
-  if(req.session.length == 1) {
-    res.send('Signup first!')
-  } else {
-    console.log(req.session);
-    res.render("login");
-  }
+  res.render("login");
 });
 
 // Registering the user
@@ -61,7 +53,7 @@ app.post("/register", async (req, res) => {
 
   // Check if all credentials are given
   if (!name || !email || !password) {
-    res.render("register", { msg: 'Please all credentials required!'});
+    res.render("register", { msg: "Please all credentials required!" });
   } else {
     // Check if email already exists
     let sql = `SELECT * FROM users WHERE email = '${email}'`;
@@ -94,7 +86,9 @@ app.post("/register", async (req, res) => {
                       let token = data[0].token;
                       const message = `${process.env.BASE_URL}/verify/${id}/${token}`;
                       await sendEmail(req.body.email, "Verify email", message);
-                      res.render('login', { msg: 'Please verify email to continue!'})
+                      res.render("login", {
+                        msg: "Please verify email to continue!",
+                      });
                     }
                   });
                 }
@@ -102,7 +96,7 @@ app.post("/register", async (req, res) => {
             }
           });
         } else {
-          res.render("register", { msg: `${email} already exists!`});
+          res.render("register", { msg: `${email} already exists!` });
         }
       }
     });
@@ -160,7 +154,7 @@ app.post("/login", (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
   if (!email || !password) {
-    res.render("login", { msg: 'Input all credentials!'});
+    res.render("login", { msg: "Input all credentials!" });
   } else {
     // Check if the user exists in the database using email
     let sql = `SELECT * FROM users WHERE email = '${email}'`;
@@ -173,12 +167,14 @@ app.post("/login", (req, res) => {
           // Check if the password matches
           let passExists = await bcrypt.compare(password, loginPass);
           if (!passExists) {
-            res.render("login", { msg: 'Email or Password not matching!'});
+            res.render("login", { msg: "Email or Password not matching!" });
           } else {
-            if (data[0].verified == 'true') {
-
+            if (data[0].verified == "true") {
               //jsonwebtoken,
-              const token=jwt.sign(data[0].id,process.env.SECRET_KEY);
+              const token = jwt.sign(
+                { id: data[0].id },
+                process.env.SECRET_KEY
+              );
               //setting token into browser
               // return res.status(200).json({
               //   token
@@ -188,30 +184,62 @@ app.post("/login", (req, res) => {
               //   name: data[0].name,
               //   email: data[0].email
               // }
-              res.cookie('jwt',token);
+              // res.cookie('jwt',token);
               // console.log(req.cookies.jwt);
               // req.session.user = user
               // req.session.save()
+              res.cookie("User", token);
               res.render("index", { msg: `Logged in as ${data[0].name}` });
             } else {
-                res.render('login', { msg: 'Please verify your email!' })
+              res.render("login", { msg: "Please verify your email!" });
             }
           }
         } else {
-          res.render("login", { msg: 'Email or Password not matching!' });
+          res.render("login", { msg: "Email or Password not matching!" });
         }
       }
     });
   }
 });
 
+const validateCookie = (req, res, next) => {
+  const { cookies } = req;
+  if ("User" in cookies) {
+    jwt.verify(req.cookies.User, process.env.SECRET_KEY, (error, decoded) => {
+      if (error) console.log(error);
+      const id = decoded.id;
+      const sql5 = `SELECT * FROM USERS WHERE id = '${id}'`;
+      conn.query(sql5, (error, data) => {
+        if (error) console.log(error);
+        if (data.length == 0) {
+          res.render("login");
+        }
+        res.render("index");
+      });
+    });
+  } else {
+    res.render("login");
+  }
+};
 
-app.get('/logout', (req, res) => {
+// Home page
+app.get("/", validateCookie, (req, res) => {
+  res.render("index");
+});
+
+// app.get('/login', async(req, res) => {
+//   const token = await jwt.sign('1234', 'regis')
+//   res.cookie('User', token)
+//   res.send('Logged in')
+//   console.log(req.cookies.User);
+// })
+
+app.get("/logout", (req, res) => {
   // req.session.user = user
   // req.session.destroy()
   // req.cookies.jwt=null;
-  res.render('login')
-})
+  res.render("login");
+});
 
 // const user = {
 //   name: 'Regis',
@@ -225,17 +253,42 @@ app.get('/logout', (req, res) => {
 //   return res.send('logged in!')
 // })
 
+// // app.get('/user', (req, res) => {
+// //   return res.send(req.session.user)
+// // })
 
-// app.get('/user', (req, res) => {
-//   return res.send(req.session.user)
+// // app.get('/logout', (req, res) => {
+// //   req.session.destroy()
+// //   res.send('Logged out!')
+// // })
+
+// Middleware to validate if a cookie exists
+
+// const validateCookie = (req, res, next) => {
+//   const { cookies } = req;
+//   if('session_id' in cookies) {
+//     if(cookies.session_id === '12345') {
+//       next()
+//     } else {
+//       res.status(403).json({ message: 'Not authenticated!' })
+//     }
+//   } else {
+//     res.send('Not authenticated!');
+//     console.log('Not authenticated!');
+//   }
+// }
+
+// // Accessing a protected route using set cookie
+// app.get('/protected', validateCookie, (req, res) => {
+//   res.json({ message: 'Authorised!' })
 // })
 
+// // Setting a cookie
 
-// app.get('/logout', (req, res) => {
-//   req.session.destroy()
-//   res.send('Logged out!')
+// app.get('/signin', async(req, res) => {
+//   res.cookie('session_id', '12345')
+//   res.json({ message: 'Logged in!' })
 // })
-
 
 app.listen(3000, () => {
   console.log(`Server listening port 3000...`);
