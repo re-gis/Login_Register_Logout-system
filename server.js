@@ -14,6 +14,7 @@ const dotenv = require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
+const { protect } = require('./middlewares/authmiddleware')
 
 app.use(cookieParser());
 app.use(
@@ -84,7 +85,7 @@ app.post("/register", async (req, res) => {
                     } else {
                       let userId = data[0].id;
                       let token = data[0].token;
-                      const message = `${process.env.BASE_URL}/verify/${id}/${token}`;
+                      const message = `Click here to verify ${process.env.BASE_URL}/verify/${id}/${token}`;
                       await sendEmail(req.body.email, "Verify email", message);
                       res.render("login", {
                         msg: "Please verify email to continue!",
@@ -115,6 +116,8 @@ app.get("/verify/:id/:token", async (req, res) => {
         console.log("Invalid link!");
         res.send("Invalid link!");
       } else {
+        const uname = data[0].name
+        const email = data[0].email
         let sql3 = `SELECT * FROM token WHERE id = '${req.params.id}'`;
         conn.query(sql3, (err, data) => {
           if (err) {
@@ -134,9 +137,7 @@ app.get("/verify/:id/:token", async (req, res) => {
                     if (err) {
                       console.log(err);
                     } else {
-                      console.log("Email verified!");
-                      console.log("Token deleted!");
-                      res.render("login");
+                      res.render("verify", { msg: `Hello ${uname} verification of ${email} successful!`});
                     }
                   });
                 }
@@ -170,24 +171,11 @@ app.post("/login", (req, res) => {
             res.render("login", { msg: "Email or Password not matching!" });
           } else {
             if (data[0].verified == "true") {
-              //jsonwebtoken,
+              // jsonwebtoken
               const token = jwt.sign(
                 { id: data[0].id },
                 process.env.SECRET_KEY
               );
-              //setting token into browser
-              // return res.status(200).json({
-              //   token
-              // })
-              // const user = {
-              //   id: data[0].id,
-              //   name: data[0].name,
-              //   email: data[0].email
-              // }
-              // res.cookie('jwt',token);
-              // console.log(req.cookies.jwt);
-              // req.session.user = user
-              // req.session.save()
               res.cookie("User", token);
               res.render("index", { msg: `Logged in as ${data[0].name}` });
             } else {
@@ -202,6 +190,8 @@ app.post("/login", (req, res) => {
   }
 });
 
+
+// Cookie middleware
 const validateCookie = (req, res, next) => {
   const { cookies } = req;
   if ("User" in cookies) {
@@ -211,10 +201,13 @@ const validateCookie = (req, res, next) => {
       const sql5 = `SELECT * FROM USERS WHERE id = '${id}'`;
       conn.query(sql5, (error, data) => {
         if (error) console.log(error);
-        if (data.length == 0) {
-          res.render("login");
+        if (data) {
+          res.render("index");
+          next()
+        } else{
+        res.render("login");
+        next()
         }
-        res.render("index");
       });
     });
   } else {
@@ -227,68 +220,42 @@ app.get("/", validateCookie, (req, res) => {
   res.render("index");
 });
 
-// app.get('/login', async(req, res) => {
-//   const token = await jwt.sign('1234', 'regis')
-//   res.cookie('User', token)
-//   res.send('Logged in')
-//   console.log(req.cookies.User);
-// })
 
+
+// Logout route
 app.get("/logout", (req, res) => {
-  // req.session.user = user
-  // req.session.destroy()
-  // req.cookies.jwt=null;
-  res.render("login");
+  // Destroying the cookie
+  res.clearCookie('User')
+  res.render('login')
+  console.log('Cookie cleared!');
 });
 
-// const user = {
-//   name: 'Regis',
-//   email: 'irumvaregisdmc@gmail.com'
-// }
 
-// // Session
-// app.get('/log', (req, res) => {
-//   req.session.user = user
-//   req.session.save()
-//   return res.send('logged in!')
-// })
+// Post page
+app.get('/create', protect, (req, res) => {
+  res.render('post')
+})
 
-// // app.get('/user', (req, res) => {
-// //   return res.send(req.session.user)
-// // })
 
-// // app.get('/logout', (req, res) => {
-// //   req.session.destroy()
-// //   res.send('Logged out!')
-// // })
 
-// Middleware to validate if a cookie exists
+// Create a post
+app.post('/create', protect, (req, res) => {
+  // res.send('Creating post')
+  const text = req.body.text
+  res.render('post', { msg: text })
+})
 
-// const validateCookie = (req, res, next) => {
-//   const { cookies } = req;
-//   if('session_id' in cookies) {
-//     if(cookies.session_id === '12345') {
-//       next()
-//     } else {
-//       res.status(403).json({ message: 'Not authenticated!' })
-//     }
-//   } else {
-//     res.send('Not authenticated!');
-//     console.log('Not authenticated!');
-//   }
-// }
 
-// // Accessing a protected route using set cookie
-// app.get('/protected', validateCookie, (req, res) => {
-//   res.json({ message: 'Authorised!' })
-// })
+// Delete a post
+app.post('/delete:id', (req, res) => {
+  res.send('Delete A Post')
+})
 
-// // Setting a cookie
 
-// app.get('/signin', async(req, res) => {
-//   res.cookie('session_id', '12345')
-//   res.json({ message: 'Logged in!' })
-// })
+// Update a post
+app.post('/update:id', (req, res) => {
+  res.send('Update a post')
+})
 
 app.listen(3000, () => {
   console.log(`Server listening port 3000...`);

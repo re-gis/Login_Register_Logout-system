@@ -5,18 +5,23 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Home Page</title>
+    <title>Post Page</title>
 </head>
 <body>
-    <h2>Home Page</h2>
+    <h2>Post Page</h2>
     <div style="margin-top: 10px;margin-left: 40px;">
         <% if(typeof msg != 'undefined' && msg) { %>
             <%= msg %>
         <%}%>
     </div>
 
-    <a class="one" id="link" href="/logout">Logout</a>
-    <a id="link" href="/create">Post</a>
+        <a class="one" id="link" href="/logout">Logout</a>
+        <form action="/create" method="post">
+            <div class="text">
+                <textarea class="textArea" name="text" id="text" cols="30" rows="10"></textarea>
+            </div>
+            <button type="submit" style="margin-left: 0px;" id="link">Post</button>
+        </form>
 
     <style>
         #link {
@@ -31,6 +36,14 @@
             box-shadow: 10px 10px 18px -8px #aaaaaa, -10px -10px 24px #ffffff;
             background: linear-gradient(#fff, #ccc);
             cursor: pointer;
+        }
+
+        .textArea {
+            margin-bottom: 90px;
+        }
+
+        .one {
+            margin-right: 30px;
         }
 
         .one:hover {
