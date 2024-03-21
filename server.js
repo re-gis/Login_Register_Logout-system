@@ -1,16 +1,12 @@
 const express = require("express");
 const app = express();
-const ejs = require("ejs");
 const path = require("path");
 const bodyParser = require("body-parser");
-const asyncHandler = require("async-handler");
 const conn = require("./config/db");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
-const nodeMailer = require("nodemailer");
 const { sendEmail } = require("./email");
 const { exit } = require("process");
-const dotenv = require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -83,7 +79,6 @@ app.post("/register", async (req, res) => {
                     if (err) {
                       console.log("Not getting the token user");
                     } else {
-                      let userId = data[0].id;
                       let token = data[0].token;
                       const message = `Click here to verify ${process.env.BASE_URL}/verify/${id}/${token}`;
                       await sendEmail(req.body.email, "Verify email", message);
@@ -246,13 +241,15 @@ app.post('/create', protect, (req, res) => {
 })
 
 
-// Delete a post
-app.post('/delete:id', (req, res) => {
-  res.send('Delete A Post')
+
+// Delete a user
+app.post('/delete:id', (req) => {
+  let { id } = req.params.id
+  // let deleteUser = await <User></User>
 })
 
 
-// Update a post
+// Update a user
 app.post('/update:id', (req, res) => {
   res.send('Update a post')
 })
